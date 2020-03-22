@@ -109,6 +109,7 @@ function getNeutralFaceValue() {
         // Reset variables
         timerCountDownSeconds = 3;
         faceTimer = null;
+        noseSphere.hidden = false;
 
         // Start big face countdown timer
         timerText.text = "Make a BIG face in " + timerCountDownSeconds.toString() + "...";
@@ -129,14 +130,13 @@ function bigFaceCountdownTimer() {
     timerText.text = "Make a big face in " + timerCountDownSeconds.toString() + "...";
         
     if (timerCountDownSeconds <= 0) {
-        noseSphere.hidden = false;
         timerText.text = "Make a BIG face!";
 
         // Stop timer
         Time.clearInterval(faceTimer);
 
         // Reset variables
-        timerCountDownSeconds = 9;
+        timerCountDownSeconds = 1;
         faceTimer = null;
 
         // Start setting big face
@@ -154,7 +154,6 @@ function getBigFaceValue() {
         Time.clearInterval(faceTimer);
 
         // Reset variables
-        noseSphere.hidden = true;
         timerCountDownSeconds = 3;
         settingBigFace = false;
         faceTimer = null;
@@ -168,16 +167,16 @@ function getBigFaceValue() {
 // Small face
 function smallFaceCountdownTimer() {
     timerCountDownSeconds -= 1;
-        
+    timerText.text = "Make a small face in " + timerCountDownSeconds.toString() + "...";
+            
     if (timerCountDownSeconds <= 0) {
-        noseSphere.hidden = false;
         timerText.text = "Make a small face!";
 
         // Stop timer
         Time.clearInterval(faceTimer);
 
         // Reset variables
-        timerCountDownSeconds = 3;
+        timerCountDownSeconds = 1;
         faceTimer = null;
 
         // Start setting big face
