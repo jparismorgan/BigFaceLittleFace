@@ -22,6 +22,7 @@ const Reactive = require('Reactive');
 var FaceTracking = require("FaceTracking");
 const CameraInfo = require("CameraInfo");
 const Instruction = require("Instruction");
+const Time = require('Time');
 
 //import { distance } from 'Reactive';
 
@@ -58,81 +59,166 @@ const Instruction = require("Instruction");
 //   });
 
 
-// Store a reference to the mouth openness (scalar)signal of a detected face
-const mouthOpenness = FaceTracking.face(0).mouth.openness;
-
-// Add 1 to the signal using the scalarSignal add method
-const mouthOpennessPlusOne = mouthOpenness.add(1);
-
-// Multiply the signal by 2 using the reactive mul method
-const doubleMouthOpenness = Reactive.mul(mouthOpenness,2);
-
-// Store a constant mouth openness value when this code is executed
-const lastMouthOpenness = mouthOpenness.pinLastValue();
-
-// Watch the signal values in the Console
-// Diagnostics.watch('Mouth Openness =>', mouthOpenness);
-// Diagnostics.watch('Mouth Openness + 1 =>', mouthOpennessPlusOne);
-// Diagnostics.watch('Mouth Openness * 2 =>', doubleMouthOpenness);
-// Diagnostics.watch('lastMouthOpenness =>', lastMouthOpenness);
-
-// Log the constant value in the Console
-Diagnostics.log(lastMouthOpenness);
-
-const maxText = Scene.root.find('2dText0');
-const minText = Scene.root.find('2dText1');
-
-//percentText.text = 'Test';
-
-// forehead and chin
-//const forehead1 = Scene.root.find('forehead');
-//const chin2 = Scene.root.child('Device').child('Camera').child('Focal Distance').child('faceTracker0').find('chin');
-
 const forehead = FaceTracking.face(0).forehead.top;
 const chin = FaceTracking.face(0).chin.tip;
+const maxText = Scene.root.find('2dText0');
+const minText = Scene.root.find('2dText1');
+const timerText = Scene.root.find('2dText2');
+const noseSphere = Scene.root.find('noseSphere');
 
-const base = Reactive.distance(chin, forehead).pinLastValue();
+// 1) Detect when face is found
+const numFaces = Reactive.round(FaceTracking.count); // the number of faces in the scene
+var haveFoundFace = false; // whether we have found a face yet
 
-//percentText.text = (Reactive.distance(chin, forehead)).toString();
+numFaces.monitor().subscribe( function(e) {
+    if (e.newValue == 1.0 && !haveFoundFace) {
+        haveFoundFace = true;
+        startNeutralFaceTimer();
+    } 
+});
 
-const noseSphere = Scene.root.find('nose');
+var timerCountDownSeconds = 3;
+var faceTimer;
 
-// noseSphere.transform.scaleX = Reactive.mul(Reactive.distance(chin, forehead), 10);
-// noseSphere.transform.scaleY = Reactive.mul(Reactive.distance(chin, forehead), 10);
-// noseSphere.transform.scaleZ = Reactive.mul(Reactive.distance(chin, forehead), 10);
-
-//Diagnostics.watch('Distance =>', Reactive.distance(chin, forehead));
-//Diagnostics.watch('Fixed =>', Reactive.distance(chin, forehead);
-
+// 2) Neutral face
 var haveSetNeutral = false;
-var neutralValue = 0.0;
+var neutralValue;
 
+function startNeutralFaceTimer() {
+    timerText.text = "Make a neutral face in " + timerCountDownSeconds.toString() + "...";
+    faceTimer = Time.setInterval(getNeutralFaceValue, 1000);
+};
+
+function getNeutralFaceValue() {
+    timerCountDownSeconds -= 1;
+    timerText.text = "Make a neutral face in " + timerCountDownSeconds.toString() + "...";
+        
+    if (timerCountDownSeconds <= 0) {
+        // Stop timer
+        Time.clearInterval(faceTimer);
+
+        // Compute neutral face
+        neutralValue = Reactive.distance(chin, forehead).pinLastValue();
+        haveSetNeutral = true;
+        Diagnostics.log('Taking neutral face measurement: ' + neutralValue.toString());    
+
+        // Reset variables
+        timerCountDownSeconds = 3;
+        faceTimer = null;
+
+        // Start big face countdown timer
+        timerText.text = "Make a BIG face in " + timerCountDownSeconds.toString() + "...";
+        faceTimer = Time.setInterval(bigFaceCountdownTimer, 1000);
+    }
+
+    return 0;
+};
+
+// 3) Big face
 var maxScore = 0.0;
 var minScore = 0.0;
+var settingBigFace = false;
+var settingSmallFace = false;
+
+function bigFaceCountdownTimer() {
+    timerCountDownSeconds -= 1;
+    timerText.text = "Make a big face in " + timerCountDownSeconds.toString() + "...";
+        
+    if (timerCountDownSeconds <= 0) {
+        timerText.text = "Make a BIG face!";
+
+        // Stop timer
+        Time.clearInterval(faceTimer);
+
+        // Reset variables
+        timerCountDownSeconds = 9;
+        faceTimer = null;
+
+        // Start setting big face
+        settingBigFace = true;
+        faceTimer = Time.setInterval(getBigFaceValue, 1000);
+    }
+};
+
+function getBigFaceValue() {
+    timerCountDownSeconds -= 1;
+    timerText.text = "Even bigger!";
+
+    if (timerCountDownSeconds <= 0) {        
+        // Stop timer
+        Time.clearInterval(faceTimer);
+
+        // Reset variables
+        timerCountDownSeconds = 3;
+        settingBigFace = false;
+        faceTimer = null;
+        
+        // Start setting small face
+        timerText.text = "Make a small face in " + timerCountDownSeconds.toString() + "...";
+        faceTimer = Time.setInterval(smallFaceCountdownTimer, 1000);
+    }
+};
+
+// Small face
+function smallFaceCountdownTimer() {
+    timerCountDownSeconds -= 1;
+        
+    if (timerCountDownSeconds <= 0) {
+        timerText.text = "Make a small face!";
+
+        // Stop timer
+        Time.clearInterval(faceTimer);
+
+        // Reset variables
+        timerCountDownSeconds = 3;
+        faceTimer = null;
+
+        // Start setting big face
+        settingSmallFace = true;
+        faceTimer = Time.setInterval(getSmallFaceValue, 1000);
+    }
+};
+
+function getSmallFaceValue() {
+    timerCountDownSeconds -= 1;
+    timerText.text = "Even smaller!";
+
+    if (timerCountDownSeconds <= 0) {
+        timerText.text = "Good job!";
+
+        // Stop timer
+        Time.clearInterval(faceTimer);
+
+        // Reset variables
+        settingSmallFace = false;
+        faceTimer = null;
+    }
+}
 
 Reactive.monitorMany({
     distance: Reactive.distance(chin, forehead),
   }).subscribe(({ newValues }) => {
-    // Set resting
-    if (haveSetNeutral == false && newValues.distance > 0.11 && newValues.distance < 0.25) {
-        haveSetNeutral = true;
-        neutralValue = newValues.distance;
-    }
+    // // Set resting
+    // if (haveSetNeutral == false && newValues.distance > 0.11 && newValues.distance < 0.25) {
+    //     haveSetNeutral = true;
+    //     neutralValue = newValues.distance;
+    // }
 
     const score = newValues.distance - neutralValue;
-    const roundedScore = Math.round(score * 10000) / 10000;
-    const scaledScore = roundedScore * 100;
+    const scaledScore = cleanDistance(score);
+   
+    timerText.text = scaledScore.toString();
 
     // Set max
-    if (haveSetNeutral == true && scaledScore > maxScore) {
+    if (haveSetNeutral == true && scaledScore > maxScore && settingBigFace) {
          maxScore = Math.round(scaledScore * 1000) / 1000;
     }
 
     // Set min
-    if (haveSetNeutral == true && scaledScore < minScore) {
+    if (haveSetNeutral == true && scaledScore < minScore && settingSmallFace) {
         minScore = Math.round(scaledScore * 1000) / 1000;
     }
-
+    
     // Diagnostics.log("neutralValue: " + neutralValue.toString());
     // Diagnostics.log("distance: " + newValues.distance.toString());
     // Diagnostics.log("roundedScore: " + roundedScore.toString());
@@ -146,63 +232,15 @@ Reactive.monitorMany({
     noseSphere.transform.scaleZ = scaledScore;
 });
 
+//// Helpers
 
-// Diagnostics.watch('Mouth Openness + 1 =>', mouthOpennessPlusOne);
-// Diagnostics.watch('Mouth Openness * 2 =>', doubleMouthOpenness);
+function cleanDistance(distance) {
+    const roundedScore = Math.round(distance * 10000) / 10000;
+    const ret =  roundedScore * 100;
+    return ret;  
+}
 
-//percentText.text = Math.sqrt( Math.pow((forehead.x - chin.transform.position.x),2) + Math.pow((forehead.transform.position.y - chin.transform.position.y),2) + Math.pow((forehead.transform.position.z - chin.transform.position.z),2)).toString();
-// ssss
+Diagnostics.watch('numFaces =>', numFaces);
 
-// function getDistance(point1,  point2){
-//     return Math.sqrt( Math.pow((point1.x - point2.x),2) + Math.pow((point1.y - point2.y),2) + Math.pow((point1.z - point2.z),2));
-// }
-// chin
-//const chin = Scene.root.find('chin');
-
-//var distance = getDistance(forehead.transform.position, chin.transform.position);
-//Diagnostics.log(forehead.transform.position.x.toString());
-// const point1 = forehead.transform.position;
-// const point2 = chin.transform.position;
-// percentText.text = Math.sqrt( Math.pow((forehead.transform.position.x - chin.transform.position.x),2) + Math.pow((forehead.transform.position.y - chin.transform.position.y),2) + Math.pow((forehead.transform.position.z - chin.transform.position.z),2)).toString();
-
-// const leftOpen = leftEye.openness;
-// const rightOpen = rightEye.openness;
-
-// Reactive.monitorMany([point1, point2]).subscribe(function(event) {
-//     percentText.text = Math.sqrt( Math.pow((point1.x - point2.x),2) + Math.pow((point1.y - point2.y),2) + Math.pow((point1.z - point2.z),2));
-//     // const isLeftOpen = event.newValues["0"] > 0.5;
-//     // const isRightOpen = event.newValues["1"] > 0.5;
-
-//     // if (isLeftOpen && isRightOpen) arrow.opacity = Reactive.val(1.0);
-//     // else arrow.opacity = Reactive.val(0.0);
-// }) 
-
-// works
-//percentText.text = forehead.transform.position.x.toString(); //distance.toString();//
-
-// Nose
-// const noseSphere = Scene.root.find('nose');
-// const parameters = {
-//     durationMilliseconds: 800,
-//     loopCount: Infinity,
-//     mirror: true
-//     };
-
-// const driver = Animation.timeDriver(parameters);
-// driver.start();
-
-// const sampler = Animation.samplers.easeInBounce(1.0, 2.0);
-
-// const animation = Animation.animate(driver, sampler);
-
-// noseSphere.transform.scaleX = animation;
-// noseSphere.transform.scaleY = animation;
-// noseSphere.transform.scaleZ = animation;
-
-
-// Diagnostics.log('noseSphere: '+noseSphere);
-// // Diagnostics.log('scale: '+noseSphere.transform.scaleX);
-
-// noseSphere.transform.scaleX = Math.floor((Math.random() * 3) + 1);
-// noseSphere.transform.scaleY = Math.floor((Math.random() * 3) + 1);
-// noseSphere.transform.scaleZ = Math.floor((Math.random() * 3) + 1);
+const dWatch = Reactive.distance(chin, forehead); 
+Diagnostics.watch('raw distance =>', dWatch);
