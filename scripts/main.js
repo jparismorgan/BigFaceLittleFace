@@ -66,6 +66,10 @@ const minText = Scene.root.find('2dText1');
 const timerText = Scene.root.find('2dText2');
 const noseSphere = Scene.root.find('noseSphere');
 
+maxText.text = "";
+minText.text = "";
+noseSphere.hidden = true;
+
 // 1) Detect when face is found
 const numFaces = Reactive.round(FaceTracking.count); // the number of faces in the scene
 var haveFoundFace = false; // whether we have found a face yet
@@ -125,6 +129,7 @@ function bigFaceCountdownTimer() {
     timerText.text = "Make a big face in " + timerCountDownSeconds.toString() + "...";
         
     if (timerCountDownSeconds <= 0) {
+        noseSphere.hidden = false;
         timerText.text = "Make a BIG face!";
 
         // Stop timer
@@ -149,6 +154,7 @@ function getBigFaceValue() {
         Time.clearInterval(faceTimer);
 
         // Reset variables
+        noseSphere.hidden = true;
         timerCountDownSeconds = 3;
         settingBigFace = false;
         faceTimer = null;
@@ -164,6 +170,7 @@ function smallFaceCountdownTimer() {
     timerCountDownSeconds -= 1;
         
     if (timerCountDownSeconds <= 0) {
+        noseSphere.hidden = false;
         timerText.text = "Make a small face!";
 
         // Stop timer
@@ -184,7 +191,7 @@ function getSmallFaceValue() {
     timerText.text = "Even smaller!";
 
     if (timerCountDownSeconds <= 0) {
-        timerText.text = "Good job!";
+        timerText.text = "Great job!!!";
 
         // Stop timer
         Time.clearInterval(faceTimer);
@@ -207,25 +214,24 @@ Reactive.monitorMany({
     const score = newValues.distance - neutralValue;
     const scaledScore = cleanDistance(score);
    
-    timerText.text = scaledScore.toString();
+    // timerText.text = scaledScore.toString();
 
     // Set max
     if (haveSetNeutral == true && scaledScore > maxScore && settingBigFace) {
          maxScore = Math.round(scaledScore * 1000) / 1000;
+         maxText.text = "Max: " + maxScore.toString();
     }
 
     // Set min
     if (haveSetNeutral == true && scaledScore < minScore && settingSmallFace) {
         minScore = Math.round(scaledScore * 1000) / 1000;
+        minText.text = "Min: " + minScore.toString();
     }
     
     // Diagnostics.log("neutralValue: " + neutralValue.toString());
     // Diagnostics.log("distance: " + newValues.distance.toString());
     // Diagnostics.log("roundedScore: " + roundedScore.toString());
     // Diagnostics.log("scaledScore: " + scaledScore.toString());
-
-    maxText.text = "Max: " + maxScore.toString();
-    minText.text = "Min: " + minScore.toString();
 
     noseSphere.transform.scaleX = scaledScore;
     noseSphere.transform.scaleY = scaledScore;
